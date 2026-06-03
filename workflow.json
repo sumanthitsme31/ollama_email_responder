@@ -1,0 +1,163 @@
+{
+  "name": "Local AI Email Auto-Responder",
+  "nodes": [
+    {
+      "parameters": {
+        "format": "resolved",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.emailReadImap",
+      "typeVersion": 2.1,
+      "position": [0, 0],
+      "id": "1aa90b8c-6681-4785-b047-160a53892987",
+      "name": "Email Trigger (IMAP)",
+      "alwaysOutputData": false,
+      "retryOnFail": false,
+      "credentials": {
+        "imap": {
+          "id": "lqF0etO08CnO003W",
+          "name": "IMAP account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": []
+        },
+        "includeOtherFields": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [208, 0],
+      "id": "a77c5c7f-e254-4d43-8ec7-89b03eb7c204",
+      "name": "Prepare Email Data"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "826608a7-9e3f-42dd-a45f-af8a806dead8",
+              "leftValue": "={{ $json.from.value[0].address }}",
+              "rightValue": "smsserviceusingpython448@gmail.com",
+              "operator": {
+                "type": "string",
+                "operation": "notEquals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [416, 0],
+      "id": "1ec1cc50-d6d5-4cb5-9f74-e758f93d39af",
+      "name": "Loop Prevention"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://ollama:11434/api/generate",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ {\n  \"model\": \"llama3:8b\",\n  \"stream\": false,\n  \"prompt\": \"You are a professional and helpful email assistant.\\n\\nA new email has arrived.\\n\\nFrom: \" + $json.from.value[0].address + \"\\nSubject: \" + $json.subject + \"\\n\\nBody:\\n\" + ($json.text || $json.html || \"No body content\") + \"\\n\\nPlease write a polite, concise, and relevant reply.\\nOutput ONLY the reply text. Do not include any greeting, signature, or explanation.\"\n} }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [624, -96],
+      "id": "d1f9f51c-3195-4aae-9f7d-276c6a3871bf",
+      "name": "Ollama Generate Reply"
+    },
+    {
+      "parameters": {
+        "fromEmail": "smsserviceusingpython448@gmail.com",
+        "toEmail": "={{ $json.from.value[0].address }}",
+        "subject": "={{ \"Re: \" + $json.subject }}",
+        "emailFormat": "text",
+        "text": "={{ $node[\"Ollama Generate Reply\"].json.response }}",
+        "options": {
+          "attachments": "",
+          "messageId": "={{ $json.messageId }}"
+        }
+      },
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2.1,
+      "position": [864, -96],
+      "id": "d235d34f-0f64-4527-829f-8dd4720d98de",
+      "name": "Send Reply",
+      "credentials": {
+        "smtp": {
+          "id": "InCbmWrBgzskdUTS",
+          "name": "SMTP account"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Email Trigger (IMAP)": {
+      "main": [
+        [
+          {
+            "node": "Prepare Email Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Email Data": {
+      "main": [
+        [
+          {
+            "node": "Loop Prevention",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Loop Prevention": {
+      "main": [
+        [
+          {
+            "node": "Ollama Generate Reply",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Ollama Generate Reply": {
+      "main": [
+        [
+          {
+            "node": "Send Reply",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "updated-2026-06-03",
+  "meta": {
+    "templateCredsSetupCompleted": true
+  },
+  "id": "Local-AI-Email-Auto-Responder"
+}
