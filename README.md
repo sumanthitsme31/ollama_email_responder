@@ -6,96 +6,235 @@ No data leaves your machine. No cloud APIs. Full privacy and control.
 
 ---
 
-## ✨ Features
+## Features
 
-- Fully local AI using Ollama (Llama 3 or any other model)
-- Automatic email replies using natural language
-- Smart loop prevention (won't reply to itself)
-- Maintains proper email threading
-- Runs entirely in Docker containers
-- Privacy-first — your emails never leave your system
-- Easy to customize prompts and behavior
+* Fully local AI using Ollama (Llama 3 or any compatible model)
+* Automatic email replies using natural language
+* Smart loop prevention (won't reply to itself)
+* Maintains proper email threading
+* Runs entirely in Docker containers
+* Privacy-first — your emails never leave your system
+* Easy to customize prompts and behavior
 
 ---
 
-## 🛠 Tech Stack
+## Tech Stack
 
-| Component       | Technology          |
-|----------------|---------------------|
-| Workflow Automation | [n8n](https://n8n.io) |
-| Local LLM           | [Ollama](https://ollama.com) |
-| Containerization    | Docker + Docker Compose |
-| Email Protocols     | IMAP (receive) + SMTP (send) |
+| Component           | Technology                   |
+| ------------------- | ---------------------------- |
+| Workflow Automation | n8n                          |
+| Local LLM           | Ollama                       |
+| Containerization    | Docker & Docker Compose      |
+| Email Protocols     | IMAP (receive) & SMTP (send) |
 
 ---
 
 ## Prerequisites
 
-- Docker and Docker Compose installed
-- A supported email account (Gmail, Outlook, etc.)
-  - For Gmail: Enable IMAP and generate an **App Password**
-- Sufficient RAM (8GB+ recommended, 16GB+ ideal for Llama 3 8B)
+* Docker installed
+* Docker Compose installed
+* Email account with IMAP and SMTP enabled
+* For Gmail:
+
+  * Enable IMAP
+  * Generate an App Password
+* Recommended:
+
+  * 8 GB RAM minimum
+  * 16 GB RAM preferred for llama3:8b
 
 ---
 
-## 🚀 Quick Start
+## Quick Start
 
 ### 1. Clone the Repository
 
 ```bash
 git clone https://github.com/yourusername/local-ai-email-responder.git
 cd local-ai-email-responder
+```
 
+### 2. Configure Environment Variables
 
-2. Configure Environment Variablesbash
-
+```bash
 cp .env.example .env
+```
 
-Edit the .env file with your email credentials and preferences.
+Edit the `.env` file with your email credentials and configuration.
 
+### 3. Start the Services
 
-3. Start the Servicesbash
-
+```bash
 docker-compose up -d
+```
 
-4. Pull the AI Modelbash
+### 4. Pull the AI Model
 
+```bash
 docker exec -it ollama ollama pull llama3:8b
+```
 
-5. Access n8nOpen your browser and go to:
-http://localhost:5678Import the workflow.json file (or it may be pre-imported depending on your setup)
-Configure IMAP and SMTP credentials in n8n
-Activate the workflow
+### 5. Access n8n
 
-Project Structure
+Open:
 
+```text
+http://localhost:5678
+```
+
+Then:
+
+1. Import `workflow.json`
+2. Configure IMAP credentials
+3. Configure SMTP credentials
+4. Activate the workflow
+
+---
+
+## Project Structure
+
+```text
 .
 ├── docker-compose.yml
 ├── workflow.json
 ├── .env.example
 ├── README.md
 └── submission.json
+```
 
-ConfigurationEmail Settings (.env)IMAP_HOST, IMAP_USER, IMAP_PASSWORD
-SMTP_HOST, SMTP_USER, SMTP_PASSWORD
-SMTP_FROM_EMAIL
+---
 
-AI ModelDefault model: llama3:8b
-You can change it in the Ollama Generate Reply node in n8n.How It WorksEmail Trigger (IMAP): Polls your inbox for new unread emails
-Loop Prevention: Skips emails sent by your own address
-Prompt Engineering: Builds a rich prompt with sender, subject, and body
-Ollama Inference: Sends prompt to local LLM running in Docker
-Smart Reply: Generates polite and concise response
-Send Reply (SMTP): Sends reply with proper threading (In-Reply-To)
+## Configuration
 
-TestingSend a test email from another account to your monitored email
-Wait ~30–90 seconds for processing
-Check your inbox for the AI-generated reply
-Verify the reply is threaded correctly
+### Email Settings (.env)
 
+```env
+IMAP_HOST=
+IMAP_PORT=
+IMAP_USER=
+IMAP_PASSWORD=
 
-Common Issues:n8n can't reach Ollama → Ensure both services are on the same Docker network (ai_responder_net)
-Model not found → Run docker exec -it ollama ollama pull llama3:8b
-Authentication failed → Use App Password for Gmail
-Slow responses → Use a smaller model like phi3 or gemma2:2b
+SMTP_HOST=
+SMTP_PORT=
+SMTP_USER=
+SMTP_PASSWORD=
+
+SMTP_FROM_EMAIL=
+```
+
+### AI Model
+
+Default model:
+
+```text
+llama3:8b
+```
+
+You may change the model inside the **Ollama Generate Reply** node within n8n.
+
+Examples:
+
+```text
+phi3
+mistral
+gemma2:2b
+llama3:8b
+```
+
+---
+
+## How It Works
+
+1. **Email Trigger (IMAP)**
+
+   * Watches the inbox for unread emails.
+
+2. **Loop Prevention**
+
+   * Prevents the workflow from responding to its own emails.
+
+3. **Prompt Construction**
+
+   * Builds a prompt using:
+
+     * Sender
+     * Subject
+     * Email body
+
+4. **Ollama Inference**
+
+   * Sends the prompt to the local Ollama API.
+
+5. **AI Reply Generation**
+
+   * The LLM creates a concise response.
+
+6. **SMTP Email Reply**
+
+   * Sends the generated response back to the sender.
+
+7. **Thread Preservation**
+
+   * Uses the original Message-ID to keep replies within the same email thread.
+
+---
+
+## Testing
+
+1. Start all containers:
+
+```bash
+docker-compose up -d
+```
+
+2. Send a test email from another account.
+
+3. Open the n8n dashboard and check workflow executions.
+
+4. Verify:
+
+   * Workflow executes successfully
+   * AI-generated reply is sent
+   * Reply appears in the same email thread
+
+---
+
+## Troubleshooting
+
+### n8n Cannot Reach Ollama
+
+Ensure both services are attached to the same Docker network:
+
+```text
+ai_responder_net
+```
+
+### Model Not Found
+
+Pull the model:
+
+```bash
+docker exec -it ollama ollama pull llama3:8b
+```
+
+### Gmail Authentication Failed
+
+Use a Gmail App Password instead of your regular password.
+
+### Slow Responses
+
+Use a smaller model:
+
+```text
+phi3
+gemma2:2b
+```
+
+instead of:
+
+```text
+llama3:8b
+```
+
+---
 
